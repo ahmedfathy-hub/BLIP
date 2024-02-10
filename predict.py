@@ -4,7 +4,7 @@ wget https://storage.googleapis.com/sfr-vision-language-research/BLIP/models/mod
 wget https://storage.googleapis.com/sfr-vision-language-research/BLIP/models/model*_vqa.pth
 wget https://storage.googleapis.com/sfr-vision-language-research/BLIP/models/model_base_retrieval_coco.pth
 """
-
+#comment from colab
 from pathlib import Path
 
 from PIL import Image
