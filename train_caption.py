@@ -5,9 +5,9 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  * By Junnan Li
 '''
-import argparse ####Ahmed
+import argparse
 import os
-import ruamel_yaml as yaml
+#import ruamel.yaml
 import numpy as np
 import random
 import time
@@ -27,6 +27,8 @@ import utils
 from utils import cosine_lr_schedule
 from data import create_dataset, create_sampler, create_loader
 from data.utils import save_result, coco_caption_eval
+import benedict
+
 
 def train(model, data_loader, optimizer, epoch, device):
     # train
@@ -70,11 +72,13 @@ def evaluate(model, data_loader, device, config):
         
         image = image.to(device)       
         
-        captions = model.generate(image, sample=False, num_beams=config['num_beams'], max_length=config['max_length'], 
-                                  min_length=config['min_length'])
+        #captions = model.generate(image, sample=True, num_beams=config['num_beams'], max_length=config['max_length'], 
+        #                          min_length=config['min_length'])
+                                  
+        captions = model.generate(image, sample=True, top_p=0.9, max_length=config['max_length'],min_length=config['min_length'])
         
         for caption, img_id in zip(captions, image_id):
-            result.append({"image_id": img_id.item(), "caption": caption})
+            result.append({"image_id": img_id, "caption": caption})
   
     return result
 
@@ -93,7 +97,7 @@ def main(args, config):
 
     #### Dataset #### 
     print("Creating captioning dataset")
-    train_dataset, val_dataset, test_dataset = create_dataset('caption_coco', config)  
+    train_dataset, val_dataset, test_dataset = create_dataset('retrieval_%s'%config['dataset'], config)  
 
     if args.distributed:
         num_tasks = utils.get_world_size()
@@ -119,7 +123,7 @@ def main(args, config):
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
         model_without_ddp = model.module    
     
-    optimizer = torch.optim.AdamW(params=model.parameters(), lr=config['init_lr'], weight_decay=config['weight_decay'])
+    optimizer = torch.optim.AdamW(params=model.parameters(), lr=float(config['init_lr']), weight_decay=float(config['weight_decay']))
             
     best = 0
     best_epoch = 0
@@ -131,7 +135,7 @@ def main(args, config):
             if args.distributed:
                 train_loader.sampler.set_epoch(epoch)
                 
-            cosine_lr_schedule(optimizer, epoch, config['max_epoch'], config['init_lr'], config['min_lr'])
+            cosine_lr_schedule(optimizer, epoch, int(config['max_epoch']), float(config['init_lr']), float(config['min_lr']))
                 
             train_stats = train(model, train_loader, optimizer, epoch, device) 
         
@@ -141,7 +145,7 @@ def main(args, config):
         test_result = evaluate(model_without_ddp, test_loader, device, config)  
         test_result_file = save_result(test_result, args.result_dir, 'test_epoch%d'%epoch, remove_duplicate='image_id')  
 
-        if utils.is_main_process():   
+        '''if utils.is_main_process():   
             coco_val = coco_caption_eval(config['coco_gt_root'],val_result_file,'val')
             coco_test = coco_caption_eval(config['coco_gt_root'],test_result_file,'test')
             
@@ -175,7 +179,7 @@ def main(args, config):
                     
         if args.evaluate: 
             break
-        dist.barrier()     
+        dist.barrier() '''    
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
@@ -184,8 +188,8 @@ def main(args, config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', default='./configs/caption_coco.yaml')
-    parser.add_argument('--output_dir', default='output/Caption_coco')        
+    parser.add_argument('--config', default='/content/BLIP/configs/caption_coco.yaml')
+    parser.add_argument('--output_dir', default='/content/output/Flicker')        
     parser.add_argument('--evaluate', action='store_true')    
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--seed', default=42, type=int)
@@ -194,13 +198,17 @@ if __name__ == '__main__':
     parser.add_argument('--distributed', default=True, type=bool)
     args = parser.parse_args()
 
-    config = yaml.load(open(args.config, 'r'), Loader=yaml.Loader)
+    #config = yaml.load(open(args.config, 'r'), Loader=yaml.Loader)
+    #yaml = ruamel.yaml.YAML()
+    #config = yaml.load('/content/BLIP/configs/caption_coco.yaml')
+    #data
+    config = benedict.load_yaml_file(args.config)
 
     args.result_dir = os.path.join(args.output_dir, 'result')
 
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     Path(args.result_dir).mkdir(parents=True, exist_ok=True)
         
-    yaml.dump(config, open(os.path.join(args.output_dir, 'config.yaml'), 'w'))    
+    benedict.dump_yaml_file(config, os.path.join(args.output_dir, 'config.yaml'))    
     
     main(args, config)
