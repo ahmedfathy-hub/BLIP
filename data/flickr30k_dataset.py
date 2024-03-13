@@ -14,10 +14,10 @@ class flickr30k_train(Dataset):
         image_root (string): Root directory of images (e.g. flickr30k/)
         ann_root (string): directory to store the annotation file
         '''        
-        url = 'https://storage.googleapis.com/sfr-vision-language-research/datasets/flickr30k_train.json'
-        filename = 'flickr30k_train.json'
+        url = '/content/annotation/data_annotation.json'
+        filename = 'data_annotation.json'
 
-        download_url(url,ann_root)
+        #download_url(url,ann_root)
         
         self.annotation = json.load(open(os.path.join(ann_root,filename),'r'))
         self.transform = transform
@@ -28,7 +28,7 @@ class flickr30k_train(Dataset):
         self.img_ids = {}  
         n = 0
         for ann in self.annotation:
-            img_id = ann['image_id']
+            img_id = ann['image']
             if img_id not in self.img_ids.keys():
                 self.img_ids[img_id] = n
                 n += 1    
@@ -46,7 +46,7 @@ class flickr30k_train(Dataset):
         
         caption = self.prompt+pre_caption(ann['caption'], self.max_words) 
 
-        return image, caption, self.img_ids[ann['image_id']] 
+        return image, caption, self.img_ids[ann['image']] 
     
     
 class flickr30k_retrieval_eval(Dataset):
@@ -56,11 +56,11 @@ class flickr30k_retrieval_eval(Dataset):
         ann_root (string): directory to store the annotation file
         split (string): val or test
         '''
-        urls = {'val':'https://storage.googleapis.com/sfr-vision-language-research/datasets/flickr30k_val.json',
-                'test':'https://storage.googleapis.com/sfr-vision-language-research/datasets/flickr30k_test.json'}
-        filenames = {'val':'flickr30k_val.json','test':'flickr30k_test.json'}
+        urls = {'val':'/content/annotation/data_annotation.json',
+                'test':'/content/annotation/data_annotation.json'}
+        filenames = {'val':'data_annotation.json','test':'data_annotation.json'}
         
-        download_url(urls[split],ann_root)
+        #download_url(urls[split],ann_root)
         
         self.annotation = json.load(open(os.path.join(ann_root,filenames[split]),'r'))
         self.transform = transform
@@ -75,12 +75,12 @@ class flickr30k_retrieval_eval(Dataset):
         for img_id, ann in enumerate(self.annotation):
             self.image.append(ann['image'])
             self.img2txt[img_id] = []
-            for i, caption in enumerate(ann['caption']):
+            '''for i, caption in enumerate(ann['caption']):
                 self.text.append(pre_caption(caption,max_words))
                 self.img2txt[img_id].append(txt_id)
                 self.txt2img[txt_id] = img_id
                 txt_id += 1
-                                    
+            '''                     
     def __len__(self):
         return len(self.annotation)
     
