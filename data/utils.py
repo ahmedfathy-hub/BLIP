@@ -50,7 +50,7 @@ def save_result(result, result_dir, filename, remove_duplicate=''):
     
     json.dump(result,open(result_file,'w'))
 
-    dist.barrier()
+    '''dist.barrier()
 
     if utils.is_main_process():   
         # combine results from all processes
@@ -71,7 +71,7 @@ def save_result(result, result_dir, filename, remove_duplicate=''):
             result = result_new             
                 
         json.dump(result,open(final_result_file,'w'))            
-        print('result file saved to %s'%final_result_file)
+        print('result file saved to %s'%final_result_file)'''
 
     return final_result_file
 
