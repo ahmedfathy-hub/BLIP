@@ -49,7 +49,7 @@ def save_result(result, result_dir, filename, remove_duplicate=''):
     final_result_file = os.path.join(result_dir, '%s.json'%filename)
     
     json.dump(result,open(result_file,'w'))
-
+    
     '''dist.barrier()
 
     if utils.is_main_process():   
