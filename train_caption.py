@@ -78,7 +78,7 @@ def evaluate(model, data_loader, device, config):
         captions = model.generate(image, sample=True, top_p=0.9, max_length=config['max_length'],min_length=config['min_length'])
         
         for caption, img_id in zip(captions, image_id):
-            result.append({"image_id": img_id, "caption": caption})
+            result.append({"image_id": img_id.item(), "caption": caption})
   
     return result
 
